@@ -5,23 +5,28 @@ pygame.init()
 
 class canvas:
 
-    def __init__( self ):
-        self.size = width, height = 320, 240
+    def __init__( self, floors = 10 ):
+        self.size = width, height = 640, 480
         self.black = (0, 0, 0)
         self.red = (255, 0, 0)
     
         self.screen = pygame.display.set_mode( self.size )
-        self.floor_num = 5
+##        pygame.RESIZABLE = 1
+        pygame.display.set_caption( "Elevator" )
+        pygame.mouse.set_visible( 1 )
+        self.num_of_floors = floors
+        
         self.floor_width = self.screen.get_width() * (0.125)                    ## 2/16
-        self.floor_height = ( self.screen.get_height()-10 )/ self.floor_num      ## height/num_of_floors
+        self.floor_height = ( self.screen.get_height()-15 )/ self.num_of_floors      ## height/num_of_floors
 
         ##  lift margin
-        self.hor_margin = 45
-        self.ver_margin = 10
+        self.hor_margin = self.floor_width * 0.3
+        self.ver_margin = self.floor_height * 0.2
 
         self.leftwall = self.screen.get_width() * (0.4375)            ## 7/16
-        self.ground = self.screen.get_height() - 5
-        self.count = self.floor_height
+        self.ground = self.screen.get_height() - 10
+##        self.count = self.floor_height
+        self.count = 1
         
     def draw_building( self ):
         """ Draws the whole building """
@@ -48,21 +53,26 @@ class canvas:
                              self.floor_width - 2*self.hor_margin, self.floor_height - 2*self.ver_margin )  ## ( x, y, width, height )
         pygame.draw.rect( self.screen, self.red, lift, 3 )
         return
-
-    def paint( self, cur_floor, dst_floor  ):
+        
+    def screen_shot( self ):
+	""" Screen shot """
+	pygame.image.save( self.screen, "screen.bmp" )
+    	
+    def paint( self, cur_floor = 0, dst_floor = 0 ):
         """ Draws the whole image """
+        
         print "paint() method called"
-        self.total_floor = 5
         self.cur_floor = cur_floor
     
-        j = ( self.total_floor - self.cur_floor -1  ) * self.floor_height + 10  ## Current floor
+        j = ( self.num_of_floors - self.cur_floor -1  ) * self.floor_height + 10  ## Current floor
+        cur_floor_pixel = j
         move = False
-        dst_floor =  self.total_floor - dst_floor - 1
-        
+        dst_floor =  self.num_of_floors - dst_floor - 1
+        next_floor = j 
         while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    sys.exit()
+##            for event in pygame.event.get():
+##                if event.type == pygame.QUIT:
+##                    sys.exit()
 
             dst = ( self.floor_height * dst_floor ) + 10
             
@@ -72,6 +82,8 @@ class canvas:
                 self.draw_building()
                 self.draw_lift(j)
                 pygame.display.update()
+                self.screen_shot()
+                return
             elif ( j > dst ):       ## Uplift
                 self.count = - abs( self.count )
                 move = True
@@ -86,15 +98,17 @@ class canvas:
                 self.draw_lift(j)
                 pygame.display.update()
                 
-                print "j-> %d" % j, " count-> %d" % self.count, " dst-> %d" % dst
+##                print "j-> %d" % j, " count-> %d" % self.count, " dst-> %d" % dst
                 if ( j == dst ):
-                    print (" Reached dst ")
+##                    print (" Reached dst ")
                     move = False
                     break
+                if ( j == cur_floor_pixel + self.floor_height ):
+                    pygame.time.delay( 1000 )
                     
                 j += self.count
                 
-                pygame.time.delay( 1000 )
+                pygame.time.delay( 10 )
             
         return
 
@@ -102,5 +116,6 @@ class canvas:
 if __name__ == "__main__":
 
     c = canvas()
-    c.paint(3, 0)
+    c.paint(0,3)
+    
     sys.exit()
