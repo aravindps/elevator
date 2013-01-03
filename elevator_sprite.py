@@ -141,11 +141,15 @@ class Elevator( pygame.sprite.DirtySprite ):
 
         self.allcustomer = pygame.sprite.Group(  )
         self.elevator_customer = pygame.sprite.Group(  )
+        self.removed_customer = []
+
+        """
+        Preload customers!
 
         c = ()
         for i in range( 0, 15 ):
             c += ( Customer( self.num_of_floors ), )
-        """
+
         c[0].cur_floor = 0
         c[0].dst_floor = 3
 
@@ -160,11 +164,11 @@ class Elevator( pygame.sprite.DirtySprite ):
 
         c[4].cur_floor = 5
         c[4].dst_floor = 0
-        """
+
         self.add_customer( c )
         self.allcustomer.update()
         self.register_customer( pygame.sprite.Group( c ) )
-
+        """
         for customer in self.allcustomer:
             print >>log, customer.ID, customer.cur_floor, customer.dst_floor, customer.finished, " direction=> ", customer.direction
 
@@ -287,19 +291,20 @@ class Elevator( pygame.sprite.DirtySprite ):
 
             self.register_customer( self.floor_list[ self.cur_floor ] )
 
-            print >> log, "    # self.next_stop =>", self.next_floor, " direction => ", self.direction
-
             if self.direction != -1:
+                print >> log, "    # self.next_stop =>", self.next_floor, " direction => ", self.direction
                 if ( self.cur_floor < self.next_floor ):
                     self.direction = 1
                 elif ( self.cur_floor > self.next_floor ):
                     self.direction = 0
 
             if self.direction == -1:
-                print >> log, "stopped"
+                """"
+                print >> log, "waiting"
+
                 for customer in self.allcustomer:
                     print >> log, customer.ID, customer.cur_floor, customer.dst_floor, customer.finished, " direction=> ", customer.direction
-                sys.exit()
+                """
 
             else:
                 self.move_one_step( self.next_floor )
@@ -335,6 +340,7 @@ class Elevator( pygame.sprite.DirtySprite ):
 
     def cancel_customer( self, customer_list ):
 
+        self.removed_customer = []
         for customer in customer_list:
             if ( self.cur_floor == customer.dst_floor ):
                 customer.finished = True
@@ -343,6 +349,7 @@ class Elevator( pygame.sprite.DirtySprite ):
                 customer.update()
                 customer_list.remove( customer )
                 print >> log, customer.ID, " (-) Reached"
+                self.removed_customer.append( customer )
         return
 
     def next_stop( self ):
@@ -350,16 +357,14 @@ class Elevator( pygame.sprite.DirtySprite ):
         floor_num = []
         up, down, same, other = self.is_waiting()
 
-        print >> log, "_____________elevator_customer len -", len(self.elevator_customer ), " cur_floor -", self.cur_floor
-
         if ( len( self.elevator_customer ) ):
+            print >> log, "_____________elevator_customer len -", len(self.elevator_customer ), " cur_floor -", self.cur_floor
             for customer in self.elevator_customer:
                 if customer.direction == self.direction:
                     floor_num.append( customer.dst_floor )
-                print >> log, customer.ID
+                print >> log, customer.ID,
 
-        print >> log, "floor: ", floor_num, " customer waiting floor list: ",\
-         "up->", up, "down->", down,"same->", same,"other->", other
+##        print >> log, "floor: ", floor_num, " customer waiting floor list: ", "up->", up, "down->", down,"same->", same,"other->", other
 
         if( self.direction == 1 ):              # Upward
             if not self.overload:
@@ -374,6 +379,7 @@ class Elevator( pygame.sprite.DirtySprite ):
                 return max( floor_num )
 
         if len( up ) or len( down ):
+            print >> log, "floor: ", floor_num, " customer waiting floor list: ", "up->", up, "down->", down,"same->", same,"other->", other
             print >> log, "!_-' Elevator empty '-_!"
             if self.direction == 1:
                 if len( up ):
@@ -389,10 +395,14 @@ class Elevator( pygame.sprite.DirtySprite ):
                     self.direction = 1
                     print >> log, "(!) Direction changed: ", self.direction
                     return min( up )
-
+            elif self.direction == -1:
+                self.direction = 1
+                return next_stop()
         if len( same ) or len( other ):
+            print >> log, "floor: ", floor_num, " customer waiting floor list: ", "up->", up, "down->", down,"same->", same,"other->", other
             if self.direction == 0:     self.direction = 1
             elif self.direction == 1:   self.direction = 0
+            elif self.direction == -1:  self.direction = 1
 
             print >> log, "(!) Direction changed: ", self.direction
             self.register_customer( self.floor_list[ self.cur_floor ] )
@@ -400,7 +410,6 @@ class Elevator( pygame.sprite.DirtySprite ):
 
         else:
             self.direction = -1
-            print >> log, " you got me "
 
     def is_waiting( self ):
         """
@@ -430,30 +439,59 @@ def main():
 
     current_dir = os.path.dirname( os.path.abspath("__file__") )
 
+    pygame.init()
     screen = pygame.display.set_mode ( ( 640, 480 ) )
     pygame.mouse.set_visible( 1 )
     pygame.display.set_caption( "Elevator using Sprite package" )
 
-    total_floors = 20
+    total_floors = 6
 
     building = Building( total_floors )
     elevator = Elevator( total_floors )
     lift = pygame.sprite.LayeredDirty( elevator )
-    lift.clear( screen, building.image )
 
+    background = building.image          # Surface
+
+    # Display status text
+    font = pygame.font.Font( None, 20 )
+    text = font.render( " Click to add customer ", 1, (0,0,0) )
+    textpos = text.get_rect( topleft = (10,10) )
+    background.blit( text, textpos )
+
+    lift.clear( screen, background )
     while True:
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                elevator.add_customer( ( Customer( total_floors ), ) )
-                print >> log, "down"
+                customer = Customer( total_floors )
+                print "[+>> {0} waiting in {1} --> {2} direction=> {3}".format( customer.ID, customer.cur_floor, customer.dst_floor, customer.direction )
+                if customer.finished == False:
+                    val = "[+>> {0} waiting in {1} --> {2} direction=> {3}".format( customer.ID, customer.cur_floor, customer.dst_floor, customer.direction )
+                    text = font.render( val , 1, (0,255,0) )
+                    textpos = text.get_rect( topleft = (10,25) )
+                elevator.add_customer( ( customer, ) )
 
-        screen.blit( building.image, ( 0, 0) )
+        screen.blit( background, (0,0) )
+        add_text_rect = screen.blit( text, textpos )
+
         lift.update()
-        rect = lift.draw(screen )
-        pygame.display.update( rect )
+        rect_to_update = lift.draw( screen )
+
+        rect_to_update.append( add_text_rect )
+
+        for customer in elevator.removed_customer:
+            line = 1
+            val = "<<-] Customer %d Reached %d"%( customer.ID, customer.dst_floor )
+            print val
+            text = font.render( val , 1, (255,0,0) )
+            textpos = text.get_rect( topleft = (10,25 + line*25 ) )
+            rect_to_update.append( screen.blit( text, textpos ) )
+            line += 1
+        elevator.removed_customer = []
+
+        pygame.display.update( rect_to_update )
 
     pygame.quit()
 
