@@ -1,7 +1,14 @@
-ELEVATOR
-========
+# ELEVATOR
 
-SIMPLE ELEVATOR SIMULATOR using pygame
+Simple Elevator Simulator using **pygame**
 
-elevator.py         --- without sprite implementation
-elevator_sprite.py  --- with sprite implementation
+## Installation
+
+*  Download pygame [here](http://www.pygame.org/download.shtml)
+- - -
+
+## Features
+
+* elevator.py         --- without sprite implementation
+* elevator_sprite.py  --- with sprite implementation
+- - -
